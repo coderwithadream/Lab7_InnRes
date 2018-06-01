@@ -28,7 +28,7 @@ public class InnReservations {
 		System.out.println("4: Reservation Cancellation");
 		System.out.println("5: Detailed Reservation Information");
 		System.out.println("6: Revenue");
-		System.out.print("Enter #:");
+		System.out.print("Enter #");
 		Scanner s = new Scanner(System.in);
 		if (s.hasNextInt()) {
 			int choice = s.nextInt();

@@ -58,6 +58,8 @@ public class InnReservations {
 		s.close();
 	}
 	
+	//1, 3, 5 - RW
+	//2, 4, 6 - KK
 	public static void rooms_and_rates(Connection c) {
 		
 	}

@@ -34,16 +34,22 @@ public class InnReservations {
 			int choice = s.nextInt();
 			switch (choice) {
 			case 1:
+				rooms_and_rates(c);
 				break;
 			case 2:
+				reservations(c);
 				break;
 			case 3:
+				reservation_change(c);
 				break;
 			case 4:
+				reservation_cancellation(c);
 				break;
 			case 5:
+				detailed_reservation_information(c);
 				break;
 			case 6:
+				revenue(c);
 				break;
 			default:
 				break;
@@ -51,4 +57,29 @@ public class InnReservations {
 		}
 		s.close();
 	}
+	
+	public static void rooms_and_rates(Connection c) {
+		
+	}
+	
+	public static void reservations(Connection c) {
+		
+	}
+	
+	public static void reservation_change(Connection c) {
+		
+	}
+	
+	public static void reservation_cancellation(Connection c) {
+		
+	}
+	
+	public static void detailed_reservation_information(Connection c) {
+		
+	}
+	
+	public static void revenue(Connection c) {
+		
+	}
+	
 }

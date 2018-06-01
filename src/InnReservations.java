@@ -13,14 +13,15 @@ public class InnReservations {
 		String dbpass = args[2];
 		try {
 			Connection c = DriverManager.getConnection(dburl, dbuser, dbpass);
-			System.out.println("Connected!");
-			prompt();
+			while (true) {
+				prompt(c);
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public static void prompt() {
+	public static void prompt(Connection c) {
 		System.out.println("1: Rooms and Rates");
 		System.out.println("2: Reservations");
 		System.out.println("3: Reservation Change");
@@ -49,6 +50,5 @@ public class InnReservations {
 			}
 		}
 		s.close();
-		prompt();
 	}
 }

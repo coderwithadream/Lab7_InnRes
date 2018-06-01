@@ -13,72 +13,74 @@ public class InnReservations {
 		String dbpass = args[2];
 		try {
 			Connection c = DriverManager.getConnection(dburl, dbuser, dbpass);
-			while (true) {
-				prompt(c);
-			}
+			Scanner s = new Scanner(System.in);
+			while (prompt(c, s));
+			s.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	public static void prompt(Connection c) {
+	public static boolean prompt(Connection c, Scanner s) {
 		System.out.println("1: Rooms and Rates");
 		System.out.println("2: Reservations");
 		System.out.println("3: Reservation Change");
 		System.out.println("4: Reservation Cancellation");
 		System.out.println("5: Detailed Reservation Information");
 		System.out.println("6: Revenue");
+		System.out.println("7: Quit");
 		System.out.print("Enter #");
-		Scanner s = new Scanner(System.in);
 		if (s.hasNextInt()) {
 			int choice = s.nextInt();
 			switch (choice) {
 			case 1:
-				rooms_and_rates(c);
+				rooms_and_rates(c, s);
 				break;
 			case 2:
-				reservations(c);
+				reservations(c, s);
 				break;
 			case 3:
-				reservation_change(c);
+				reservation_change(c, s);
 				break;
 			case 4:
-				reservation_cancellation(c);
+				reservation_cancellation(c, s);
 				break;
 			case 5:
-				detailed_reservation_information(c);
+				detailed_reservation_information(c, s);
 				break;
 			case 6:
-				revenue(c);
+				revenue(c, s);
 				break;
+			case 7:
+				return false;
 			default:
 				break;
 			}
 		}
-		s.close();
+		return true;
 	}
 	
-	public static void rooms_and_rates(Connection c) {
+	public static void rooms_and_rates(Connection c, Scanner s) {
 		
 	}
 	
-	public static void reservations(Connection c) {
+	public static void reservations(Connection c, Scanner s) {
 		
 	}
 	
-	public static void reservation_change(Connection c) {
+	public static void reservation_change(Connection c, Scanner s) {
 		
 	}
 	
-	public static void reservation_cancellation(Connection c) {
+	public static void reservation_cancellation(Connection c, Scanner s) {
 		
 	}
 	
-	public static void detailed_reservation_information(Connection c) {
+	public static void detailed_reservation_information(Connection c, Scanner s) {
 		
 	}
 	
-	public static void revenue(Connection c) {
+	public static void revenue(Connection c, Scanner s) {
 		
 	}
 	

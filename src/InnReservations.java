@@ -72,6 +72,38 @@ public class InnReservations {
 	
 	public static void reservations(Connection c, Scanner s) {
 		System.out.println("2");
+		System.out.print("First name:");
+		if (s.hasNextLine()) {
+			String string = s.nextLine();
+		}
+		System.out.print("Last name:");
+		if (s.hasNextLine()) {
+			String string = s.nextLine();
+		}
+		System.out.print("Room code:");
+		if (s.hasNextLine()) {
+			String string = s.nextLine();
+		}
+		System.out.print("Bed type:");
+		if (s.hasNextLine()) {
+			String string = s.nextLine();
+		}
+		System.out.print("Check-in (mm/dd/yyyy):");
+		if (s.hasNextLine()) {
+			String string = s.nextLine();
+		}
+		System.out.print("Check-out (mm/dd/yyyy):");
+		if (s.hasNextLine()) {
+			String string = s.nextLine();
+		}
+		System.out.print("# of children:");
+		if (s.hasNextLine()) {
+			String string = s.nextLine();
+		}
+		System.out.print("# of adults:");
+		if (s.hasNextLine()) {
+			String string = s.nextLine();
+		}
 	}
 	
 	public static void reservation_change(Connection c, Scanner s) {
@@ -80,6 +112,16 @@ public class InnReservations {
 	
 	public static void reservation_cancellation(Connection c, Scanner s) {
 		System.out.println("4");
+		System.out.print("Enter reservation code:");
+		if (s.hasNextLine()) {
+			String code = s.nextLine();
+		}
+		System.out.println("Are you sure? (yes/no)");
+		if (s.hasNextLine()) {
+			if (s.nextLine().equals("yes")) {
+				//remove row
+			}
+		}
 	}
 	
 	public static void detailed_reservation_information(Connection c, Scanner s) {
@@ -88,6 +130,7 @@ public class InnReservations {
 	
 	public static void revenue(Connection c, Scanner s) {
 		System.out.println("6");
+		
 	}
 	
 }

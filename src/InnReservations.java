@@ -58,13 +58,12 @@ public class InnReservations {
 				default:
 					break;
 				}
+				return true;
 			} else {
 				s.next();
-				s.nextLine();
 			}
-		} else {
-			s.nextLine();
 		}
+		s.nextLine();
 		return true;
 	}
 	

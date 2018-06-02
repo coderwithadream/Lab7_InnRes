@@ -33,30 +33,33 @@ public class InnReservations {
 		System.out.println("6: Revenue");
 		System.out.println("7: Quit");
 		System.out.print("Enter #");
-		int choice =  Character.getNumericValue(s.nextLine().charAt(0));
-		switch (choice) {
-		case 1:
-			rooms_and_rates(c, s);
-			break;
-		case 2:
-			reservations(c, s);
-			break;
-		case 3:
-			reservation_change(c, s);
-			break;
-		case 4:
-			reservation_cancellation(c, s);
-			break;
-		case 5:
-			detailed_reservation_information(c, s);
-			break;
-		case 6:
-			revenue(c, s);
-			break;
-		case 7:
-			return false;
-		default:
-			break;
+		String string = s.nextLine();
+		if (string.length() == 1) {
+			int choice =  Character.getNumericValue(string.charAt(0));
+			switch (choice) {
+			case 1:
+				rooms_and_rates(c, s);
+				break;
+			case 2:
+				reservations(c, s);
+				break;
+			case 3:
+				reservation_change(c, s);
+				break;
+			case 4:
+				reservation_cancellation(c, s);
+				break;
+			case 5:
+				detailed_reservation_information(c, s);
+				break;
+			case 6:
+				revenue(c, s);
+				break;
+			case 7:
+				return false;
+			default:
+				break;
+			}
 		}
 		return true;
 	}

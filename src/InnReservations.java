@@ -8,6 +8,9 @@ import java.util.Scanner;
 
 public class InnReservations {
 	public static void main(String[] args) {
+		if (args.length != 3) {
+			return;
+		}
 		String dburl = "jdbc:mysql://" + args[0] + "?autoReconnect=true&verifyServerCertificate=false&useSSL=true";
 		String dbuser = args[1];
 		String dbpass = args[2];

@@ -33,6 +33,7 @@ public class InnReservations {
 		if (s.hasNextLine()) {
 			if (s.hasNextInt()) {
 				int choice = s.nextInt();
+				s.nextLine();
 				switch (choice) {
 				case 1:
 					rooms_and_rates(c, s);
@@ -57,40 +58,40 @@ public class InnReservations {
 				default:
 					break;
 				}
+			} else {
+				s.next();
+				s.nextLine();
 			}
+		} else {
+			s.nextLine();
 		}
-		s.nextLine();
 		return true;
 	}
 	
-<<<<<<< HEAD
 	//1, 3, 5 - RW
 	//2, 4, 6 - KK
-	public static void rooms_and_rates(Connection c) {
-=======
 	public static void rooms_and_rates(Connection c, Scanner s) {
->>>>>>> df79ad43e9fd31d1719dc53ae160f3afc3f502ec
-		
+		System.out.println("1");
 	}
 	
 	public static void reservations(Connection c, Scanner s) {
-		
+		System.out.println("2");
 	}
 	
 	public static void reservation_change(Connection c, Scanner s) {
-		
+		System.out.println("3");
 	}
 	
 	public static void reservation_cancellation(Connection c, Scanner s) {
-		
+		System.out.println("4");
 	}
 	
 	public static void detailed_reservation_information(Connection c, Scanner s) {
-		
+		System.out.println("5");
 	}
 	
 	public static void revenue(Connection c, Scanner s) {
-		
+		System.out.println("6");
 	}
 	
 }

@@ -1,10 +1,12 @@
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.util.Scanner;
+import java.lang.String;
 
 public class InnReservations {
 	public static void main(String[] args) {
@@ -72,38 +74,93 @@ public class InnReservations {
 	
 	public static void reservations(Connection c, Scanner s) {
 		System.out.println("2");
+		String string = "";
+		boolean cont = true;
+		
 		System.out.print("First name:");
 		if (s.hasNextLine()) {
-			String string = s.nextLine();
+			string = s.nextLine();
 		}
+		String firstname = string;
+		
 		System.out.print("Last name:");
 		if (s.hasNextLine()) {
-			String string = s.nextLine();
+			string = s.nextLine();
 		}
+		String lastname = string;
+		
 		System.out.print("Room code:");
 		if (s.hasNextLine()) {
-			String string = s.nextLine();
+			string = s.nextLine();
 		}
+		String roomcode = string;
+		
 		System.out.print("Bed type:");
 		if (s.hasNextLine()) {
-			String string = s.nextLine();
+			string = s.nextLine();
 		}
-		System.out.print("Check-in (mm/dd/yyyy):");
-		if (s.hasNextLine()) {
-			String string = s.nextLine();
+		String bedtype = string;
+
+		cont = true;
+		Date checkin = Date.valueOf("0000-01-01");
+		while (cont) {
+			System.out.print("Check-in (yyyy-mm-dd):");
+			if (s.hasNextLine()) {
+				string = s.nextLine();
+				try {
+					checkin = Date.valueOf(string);
+					cont = false;
+				} catch (Exception e) {}
+			}
 		}
-		System.out.print("Check-out (mm/dd/yyyy):");
-		if (s.hasNextLine()) {
-			String string = s.nextLine();
+
+		cont = true;
+		Date checkout = Date.valueOf("0000-01-01");
+		while (cont) {
+			System.out.print("Check-out (yyyy-mm-dd):");
+			if (s.hasNextLine()) {
+				string = s.nextLine();
+				try {
+					checkout = Date.valueOf(string);
+					cont = false;
+				} catch (Exception e) {}
+			}
 		}
-		System.out.print("# of children:");
-		if (s.hasNextLine()) {
-			String string = s.nextLine();
+		
+		cont = true;
+		int children = 0;
+		while (cont) {
+			System.out.print("# of children:");
+			if (s.hasNextLine()) {
+				string = s.nextLine();
+				try {
+					children = Integer.parseInt(string);
+					cont = false;
+				} catch (Exception e) {}
+			}
 		}
-		System.out.print("# of adults:");
-		if (s.hasNextLine()) {
-			String string = s.nextLine();
+		
+		cont = true;
+		int adults = 0;
+		while (cont) {
+			System.out.print("# of adults:");
+			if (s.hasNextLine()) {
+				string = s.nextLine();
+				try {
+					adults = Integer.parseInt(string);
+					cont = false;
+				} catch (Exception e) {}
+			}
 		}
+		
+		System.out.println(firstname);
+		System.out.println(lastname);
+		System.out.println(roomcode);
+		System.out.println(bedtype);
+		System.out.println(checkin.toString());
+		System.out.println(checkout.toString());
+		System.out.println(children);
+		System.out.println(adults);
 	}
 	
 	public static void reservation_change(Connection c, Scanner s) {
@@ -118,7 +175,7 @@ public class InnReservations {
 		}
 		System.out.println("Are you sure? (yes/no)");
 		if (s.hasNextLine()) {
-			if (s.nextLine().equals("yes")) {
+			if (s.nextLine().toLowerCase().equals("yes")) {
 				//remove row
 			}
 		}

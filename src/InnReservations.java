@@ -75,82 +75,61 @@ public class InnReservations {
 	public static void reservations(Connection c, Scanner s) {
 		System.out.println("2");
 		String string = "";
-		boolean cont = true;
 		
 		System.out.print("First name:");
-		if (s.hasNextLine()) {
-			string = s.nextLine();
-		}
+		string = s.nextLine();
 		String firstname = string;
 		
 		System.out.print("Last name:");
-		if (s.hasNextLine()) {
-			string = s.nextLine();
-		}
+		string = s.nextLine();
 		String lastname = string;
 		
 		System.out.print("Room code:");
-		if (s.hasNextLine()) {
-			string = s.nextLine();
-		}
+		string = s.nextLine();
 		String roomcode = string;
 		
 		System.out.print("Bed type:");
-		if (s.hasNextLine()) {
-			string = s.nextLine();
-		}
+		string = s.nextLine();
 		String bedtype = string;
 
-		cont = true;
 		Date checkin = Date.valueOf("0000-01-01");
-		while (cont) {
+		while (true) {
 			System.out.print("Check-in (yyyy-mm-dd):");
-			if (s.hasNextLine()) {
-				string = s.nextLine();
-				try {
-					checkin = Date.valueOf(string);
-					cont = false;
-				} catch (Exception e) {}
-			}
+			string = s.nextLine();
+			try {
+				checkin = Date.valueOf(string);
+				break;
+			} catch (Exception e) {}
 		}
 
-		cont = true;
 		Date checkout = Date.valueOf("0000-01-01");
-		while (cont) {
+		while (true) {
 			System.out.print("Check-out (yyyy-mm-dd):");
-			if (s.hasNextLine()) {
-				string = s.nextLine();
-				try {
-					checkout = Date.valueOf(string);
-					cont = false;
-				} catch (Exception e) {}
-			}
+			string = s.nextLine();
+			try {
+				checkout = Date.valueOf(string);
+				break;
+			} catch (Exception e) {}
 		}
 		
-		cont = true;
 		int children = 0;
-		while (cont) {
+		while (true) {
 			System.out.print("# of children:");
-			if (s.hasNextLine()) {
-				string = s.nextLine();
-				try {
-					children = Integer.parseInt(string);
-					cont = false;
-				} catch (Exception e) {}
-			}
+			string = s.nextLine();
+			try {
+				children = Integer.parseInt(string);
+				break;
+			} catch (Exception e) {}
 		}
-		
-		cont = true;
+
 		int adults = 0;
-		while (cont) {
+		while (true) {
 			System.out.print("# of adults:");
-			if (s.hasNextLine()) {
-				string = s.nextLine();
-				try {
-					adults = Integer.parseInt(string);
-					cont = false;
-				} catch (Exception e) {}
-			}
+			string = s.nextLine();
+			try {
+				adults = Integer.parseInt(string);
+				break;
+			} catch (Exception e) {}
 		}
 		
 		System.out.println(firstname);
@@ -170,14 +149,10 @@ public class InnReservations {
 	public static void reservation_cancellation(Connection c, Scanner s) {
 		System.out.println("4");
 		System.out.print("Enter reservation code:");
-		if (s.hasNextLine()) {
-			String code = s.nextLine();
-		}
+		String code = s.nextLine();
 		System.out.println("Are you sure? (yes/no)");
-		if (s.hasNextLine()) {
-			if (s.nextLine().toLowerCase().equals("yes")) {
-				//remove row
-			}
+		if (s.nextLine().toLowerCase().equals("yes")) {
+			//remove row
 		}
 	}
 	
@@ -187,7 +162,45 @@ public class InnReservations {
 	
 	public static void revenue(Connection c, Scanner s) {
 		System.out.println("6");
+		String string;
+		int year = 0;
 		
+		while (true) {
+			System.out.print("Year:");
+			string = s.nextLine();
+			try {
+				year = Integer.parseInt(string);
+				break;
+			} catch (Exception e) {}
+		}
+		
+		try {
+			String sql = "select room,\n" + 
+					"    sum(if(month(checkout) = 1, rate * datediff(checkout, checkin), 0)) January,\n" + 
+					"    sum(if(month(checkout) = 2, rate * datediff(checkout, checkin), 0)) February,\n" + 
+					"    sum(if(month(checkout) = 3, rate * datediff(checkout, checkin), 0)) March,\n" + 
+					"    sum(if(month(checkout) = 4, rate * datediff(checkout, checkin), 0)) April,\n" + 
+					"    sum(if(month(checkout) = 5, rate * datediff(checkout, checkin), 0)) May,\n" + 
+					"    sum(if(month(checkout) = 6, rate * datediff(checkout, checkin), 0)) June,\n" + 
+					"    sum(if(month(checkout) = 7, rate * datediff(checkout, checkin), 0)) July,\n" + 
+					"    sum(if(month(checkout) = 8, rate * datediff(checkout, checkin), 0)) August,\n" + 
+					"    sum(if(month(checkout) = 9, rate * datediff(checkout, checkin), 0)) September,\n" + 
+					"    sum(if(month(checkout) = 10, rate * datediff(checkout, checkin), 0)) October,\n" + 
+					"    sum(if(month(checkout) = 11, rate * datediff(checkout, checkin), 0)) November,\n" + 
+					"    sum(if(month(checkout) = 12, rate * datediff(checkout, checkin), 0)) December,\n" + 
+					"    sum(rate * datediff(checkout, checkin)) Total\n" + 
+					"from kkurashi.lab7_reservations join kkurashi.lab7_rooms\n" + 
+					"on room = roomcode\n" + 
+					"where year(checkout) = ?\n" + 
+					"group by room\n" + 
+					"order by room";
+			PreparedStatement stmt = c.prepareStatement(sql);
+			stmt.setInt(1, year);
+			
+			ResultSet result = stmt.executeQuery();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 	
 }

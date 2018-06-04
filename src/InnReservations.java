@@ -147,7 +147,6 @@ public class InnReservations {
 	}
 	
 	public static void reservation_cancellation(Connection c, Scanner s) {
-		System.out.println("4");
 		String string;
 		int code;
 		
@@ -162,19 +161,23 @@ public class InnReservations {
 		
 		while(true) {
 			System.out.print("Are you sure? (yes/no):");
-			if (s.nextLine().toLowerCase().equals("yes")) {
+			string = s.nextLine().toLowerCase();
+			if (string.equals("yes")) {
 				String sql = "delete from kkurashi.lab7_reservations where code = ?";
 				try {
 					PreparedStatement stmt = c.prepareStatement(sql);
 					stmt.setInt(1, code);
-					stmt.executeUpdate();
-					System.out.println("Reservation cancelled.");
+					if (stmt.executeUpdate() == 0) {
+						System.out.println("No such reservation.");
+					} else {
+						System.out.println("Reservation cancelled.");
+					}
 				} catch (SQLException e) {
 					e.printStackTrace();
 				}
 				break;
 			}
-			if (s.nextLine().toLowerCase().equals("no")) {
+			if (string.equals("no")) {
 				break;
 			}
 		}

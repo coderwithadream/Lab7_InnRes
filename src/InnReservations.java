@@ -1,5 +1,4 @@
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.SQLException;
@@ -27,6 +26,7 @@ public class InnReservations {
 	}
 	
 	public static boolean prompt(Connection c, Scanner s) {
+		System.out.println();
 		System.out.println("1: Rooms and Rates");
 		System.out.println("2: Reservations");
 		System.out.println("3: Reservation Change");
@@ -161,7 +161,6 @@ public class InnReservations {
 	}
 	
 	public static void revenue(Connection c, Scanner s) {
-		System.out.println("6");
 		String string;
 		int year = 0;
 		
@@ -176,19 +175,19 @@ public class InnReservations {
 		
 		try {
 			String sql = "select room,\n" + 
-					"    sum(if(month(checkout) = 1, rate * datediff(checkout, checkin), 0)) January,\n" + 
-					"    sum(if(month(checkout) = 2, rate * datediff(checkout, checkin), 0)) February,\n" + 
-					"    sum(if(month(checkout) = 3, rate * datediff(checkout, checkin), 0)) March,\n" + 
-					"    sum(if(month(checkout) = 4, rate * datediff(checkout, checkin), 0)) April,\n" + 
-					"    sum(if(month(checkout) = 5, rate * datediff(checkout, checkin), 0)) May,\n" + 
-					"    sum(if(month(checkout) = 6, rate * datediff(checkout, checkin), 0)) June,\n" + 
-					"    sum(if(month(checkout) = 7, rate * datediff(checkout, checkin), 0)) July,\n" + 
-					"    sum(if(month(checkout) = 8, rate * datediff(checkout, checkin), 0)) August,\n" + 
-					"    sum(if(month(checkout) = 9, rate * datediff(checkout, checkin), 0)) September,\n" + 
-					"    sum(if(month(checkout) = 10, rate * datediff(checkout, checkin), 0)) October,\n" + 
-					"    sum(if(month(checkout) = 11, rate * datediff(checkout, checkin), 0)) November,\n" + 
-					"    sum(if(month(checkout) = 12, rate * datediff(checkout, checkin), 0)) December,\n" + 
-					"    sum(rate * datediff(checkout, checkin)) Total\n" + 
+					"    round(sum(if(month(checkout) = 1, rate * datediff(checkout, checkin), 0)), 0) January,\n" + 
+					"    round(sum(if(month(checkout) = 2, rate * datediff(checkout, checkin), 0)), 0) February,\n" + 
+					"    round(sum(if(month(checkout) = 3, rate * datediff(checkout, checkin), 0)), 0) March,\n" + 
+					"    round(sum(if(month(checkout) = 4, rate * datediff(checkout, checkin), 0)), 0) April,\n" + 
+					"    round(sum(if(month(checkout) = 5, rate * datediff(checkout, checkin), 0)), 0) May,\n" + 
+					"    round(sum(if(month(checkout) = 6, rate * datediff(checkout, checkin), 0)), 0) June,\n" + 
+					"    round(sum(if(month(checkout) = 7, rate * datediff(checkout, checkin), 0)), 0) July,\n" + 
+					"    round(sum(if(month(checkout) = 8, rate * datediff(checkout, checkin), 0)), 0) August,\n" + 
+					"    round(sum(if(month(checkout) = 9, rate * datediff(checkout, checkin), 0)), 0) September,\n" + 
+					"    round(sum(if(month(checkout) = 10, rate * datediff(checkout, checkin), 0)), 0) October,\n" + 
+					"    round(sum(if(month(checkout) = 11, rate * datediff(checkout, checkin), 0)), 0) November,\n" + 
+					"    round(sum(if(month(checkout) = 12, rate * datediff(checkout, checkin), 0)), 0) December,\n" + 
+					"    round(sum(rate * datediff(checkout, checkin)), 0) Total\n" + 
 					"from kkurashi.lab7_reservations join kkurashi.lab7_rooms\n" + 
 					"on room = roomcode\n" + 
 					"where year(checkout) = ?\n" + 
@@ -198,6 +197,26 @@ public class InnReservations {
 			stmt.setInt(1, year);
 			
 			ResultSet result = stmt.executeQuery();
+			
+			if (result.next()) {
+				int[] totals = new int[13];
+				int revenue;
+				System.out.printf("%5s | %9s | %9s | %9s | %9s | %9s | %9s | %9s | %9s | %9s | %9s | %9s | %9s | %9s\n",
+						"Room", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "Year");
+				do {
+					System.out.printf("%5s", result.getString(1));
+					for (int i = 2; i <= 14; i++) {
+						revenue = result.getInt(i);
+						totals[i - 2] += revenue;
+						System.out.printf(" | %9d", revenue);
+					}
+					System.out.println();
+				} while (result.next());
+				System.out.printf("%5s", "Total");
+				for (int i = 0; i <= 12; i++) {
+					System.out.printf(" | %9d", totals[i]);
+				}
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}

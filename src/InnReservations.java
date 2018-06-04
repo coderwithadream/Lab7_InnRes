@@ -74,7 +74,7 @@ public class InnReservations {
 	
 	public static void reservations(Connection c, Scanner s) {
 		System.out.println("2");
-		String string = "";
+		String string;
 		
 		System.out.print("First name:");
 		string = s.nextLine();
@@ -92,7 +92,7 @@ public class InnReservations {
 		string = s.nextLine();
 		String bedtype = string;
 
-		Date checkin = Date.valueOf("0000-01-01");
+		Date checkin;
 		while (true) {
 			System.out.print("Check-in (yyyy-mm-dd):");
 			string = s.nextLine();
@@ -102,7 +102,7 @@ public class InnReservations {
 			} catch (Exception e) {}
 		}
 
-		Date checkout = Date.valueOf("0000-01-01");
+		Date checkout;
 		while (true) {
 			System.out.print("Check-out (yyyy-mm-dd):");
 			string = s.nextLine();
@@ -112,7 +112,7 @@ public class InnReservations {
 			} catch (Exception e) {}
 		}
 		
-		int children = 0;
+		int children;
 		while (true) {
 			System.out.print("# of children:");
 			string = s.nextLine();
@@ -122,7 +122,7 @@ public class InnReservations {
 			} catch (Exception e) {}
 		}
 
-		int adults = 0;
+		int adults;
 		while (true) {
 			System.out.print("# of adults:");
 			string = s.nextLine();
@@ -148,11 +148,35 @@ public class InnReservations {
 	
 	public static void reservation_cancellation(Connection c, Scanner s) {
 		System.out.println("4");
-		System.out.print("Enter reservation code:");
-		String code = s.nextLine();
-		System.out.println("Are you sure? (yes/no)");
-		if (s.nextLine().toLowerCase().equals("yes")) {
-			//remove row
+		String string;
+		int code;
+		
+		while (true) {
+			System.out.print("Enter reservation code:");
+			string = s.nextLine();
+			try {
+				code = Integer.parseInt(string);
+				break;
+			} catch (Exception e) {}
+		}
+		
+		while(true) {
+			System.out.print("Are you sure? (yes/no):");
+			if (s.nextLine().toLowerCase().equals("yes")) {
+				String sql = "delete from kkurashi.lab7_reservations where code = ?";
+				try {
+					PreparedStatement stmt = c.prepareStatement(sql);
+					stmt.setInt(1, code);
+					stmt.executeUpdate();
+					System.out.println("Reservation cancelled.");
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+				break;
+			}
+			if (s.nextLine().toLowerCase().equals("no")) {
+				break;
+			}
 		}
 	}
 	
@@ -216,6 +240,7 @@ public class InnReservations {
 				for (int i = 0; i <= 12; i++) {
 					System.out.printf(" | %9d", totals[i]);
 				}
+				System.out.println();
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();

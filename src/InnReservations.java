@@ -132,14 +132,7 @@ public class InnReservations {
 			} catch (Exception e) {}
 		}
 		
-		System.out.println(firstname);
-		System.out.println(lastname);
-		System.out.println(roomcode);
-		System.out.println(bedtype);
-		System.out.println(checkin.toString());
-		System.out.println(checkout.toString());
-		System.out.println(children);
-		System.out.println(adults);
+		String sql = "";
 	}
 	
 	public static void reservation_change(Connection c, Scanner s) {

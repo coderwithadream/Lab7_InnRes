@@ -76,7 +76,7 @@ public class InnReservations {
 	}
 	
 	public static void reservations(Connection c, Scanner s) {
-		System.out.println("2");
+		System.out.println("");
 		String string;
 		
 		System.out.print("First name:");
@@ -169,16 +169,68 @@ public class InnReservations {
 			ArrayList<String> list = new ArrayList<String>();
 			ArrayList<Double> pricelist = new ArrayList<Double>();
 			if (result.next()) {
+				System.out.println("Choose your room:");
 				do {
 					string = result.getString(1);
 					System.out.printf("%2d: %s\n", i, string);
-					string += " " + result.getString(2) + " " + result.getString(3);
+					string += " " + result.getString(2) + " " + result.getString(4);
 					list.add(string);
 					pricelist.add(result.getDouble(6));
 					i++;
 				} while (result.next());
 			} else {
-				sql = "";
+				sql = "select *, count(*) priority\n" + 
+						"from (\n" + 
+						"    select *\n" + 
+						"    from kkurashi.lab7_rooms a\n" + 
+						"    union all\n" + 
+						"    select *\n" + 
+						"    from kkurashi.lab7_rooms b\n" + 
+						"    where decor in (\n" + 
+						"        select decor\n" + 
+						"        from kkurashi.lab7_rooms\n" + 
+						"        where roomcode = ?\n" + 
+						"    )\n" + 
+						"    union all\n" + 
+						"    select *\n" + 
+						"    from kkurashi.lab7_rooms c\n" + 
+						"    where bedtype = ?\n" + 
+						"    ) rooms\n" + 
+						"where maxocc >= ?\n" + 
+						"    and roomcode not in (\n" + 
+						"        select distinct room\n" + 
+						"        from kkurashi.lab7_reservations\n" + 
+						"        where checkin between ? and date_sub(?, interval 1 day)\n" + 
+						"        or date_sub(checkout, interval 1 day) between ? and ?\n" + 
+						"    )\n" + 
+						"group by roomcode, roomname, beds, bedtype, maxocc, baseprice, decor\n" + 
+						"order by priority desc\n" + 
+						"limit 5";
+				stmt = c.prepareStatement(sql);
+				stmt.setString(1, roomcode);
+				stmt.setString(2, bedtype);
+				stmt.setInt(3, adults + children);
+				stmt.setDate(4, checkin);
+				stmt.setDate(5, checkout);
+				stmt.setDate(6, checkin);
+				stmt.setDate(7, checkout);
+				
+				result = stmt.executeQuery();
+				if (result.next()) {
+					System.out.println("No exact matches found.");
+					System.out.println("These are our available options:");
+					do {
+						string = result.getString(1);
+						System.out.printf("%2d: %s\n", i, string);
+						string += " " + result.getString(2) + " " + result.getString(4);
+						list.add(string);
+						pricelist.add(result.getDouble(6));
+						i++;
+					} while (result.next());
+				} else {
+					System.out.println("No room can accomodate your request");
+					return;
+				}
 			}
 			
 			int room;
@@ -192,8 +244,9 @@ public class InnReservations {
 			}
 			
 			double price = 0.0;
-			LocalDate checkinDate = checkin.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-			LocalDate checkoutDate = checkout.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+			double days = 0.0;
+			LocalDate checkinDate = checkin.toLocalDate();
+			LocalDate checkoutDate = checkout.toLocalDate();
 			while (checkinDate.isBefore(checkoutDate)) {
 				if (checkinDate.getDayOfWeek().equals(DayOfWeek.SUNDAY) || checkinDate.getDayOfWeek().equals(DayOfWeek.SATURDAY)) {
 					price += pricelist.get(room - 1) * 1.1;
@@ -201,6 +254,7 @@ public class InnReservations {
 					price += pricelist.get(room - 1);
 				}
 				checkinDate = checkinDate.plusDays(1);
+				days += 1.0;
 			}
 			price *= 1.18;
 			
@@ -209,7 +263,7 @@ public class InnReservations {
 			System.out.println(checkin.toString() + " to " + checkout.toString());
 			System.out.println("Adults:" + adults);
 			System.out.println("Children:" + children);
-			System.out.printf("Cost:$%.2f", price);
+			System.out.printf("Cost:$%.2f\n", price);
 			
 			sql = "insert into `kkurashi`.`lab7_reservations`\n" + 
 					"    (`CODE`, `Room`, `CheckIn`, `Checkout`, `Rate`, `LastName`, `FirstName`, `Adults`, `Kids`)\n" + 
@@ -219,22 +273,32 @@ public class InnReservations {
 			stmt.setString(2, list.get(room - 1).substring(0, 3));
 			stmt.setDate(3, checkin);
 			stmt.setDate(4, checkout);
-			stmt.setDouble(5, price);
+			stmt.setDouble(5, price / days);
 			stmt.setString(6, lastname);
 			stmt.setString(7, firstname);
 			stmt.setInt(8, adults);
 			stmt.setInt(9, children);
-			int update = stmt.executeUpdate();
-			if (update > 0) {
-				System.out.println("Success!");
-			} else {
-				System.out.println("Unable to add Reservation.");
+			
+			while(true) {
+				System.out.print("Confirm Reservation (confirm/cancel):");
+				string = s.nextLine().toLowerCase();
+				if (string.equals("confirm")) {
+					int update = stmt.executeUpdate();
+					if (update > 0) {
+						System.out.println("Success!");
+					} else {
+						System.out.println("Unable to add Reservation");
+					}
+					break;
+				}
+				if (string.equals("cancel")) {
+					System.out.println("Reservation Cancelled!");
+					break;
+				}
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		
-		
 	}
 	
 	public static void reservation_change(Connection c, Scanner s) {

@@ -72,7 +72,42 @@ public class InnReservations {
 	//1, 3, 5 - RW
 	//2, 4, 6 - KK
 	public static void rooms_and_rates(Connection c, Scanner s) {
-		System.out.println("1");
+		
+		try{
+			String sql = "select kkurashi.lab7_rooms.*, _ as popularity, _ as availCheckin, _ as lastStayDuration\n" +
+						 "from kkurashi.lab7_rooms JOIN kkurashi.lab7_reservations\n" + 
+						 "WHERE Room = RoomCode";
+			System.out.println(sql);
+
+			PreparedStatement stmt = c.prepareStatement(sql);
+			ResultSet result = stmt.executeQuery();
+			
+			if (result.next()) {
+				System.out.println("+----------+--------------------------+------+---------+--------+-----------+-------------+------------+------------+----------------+------------------+");
+				System.out.printf("| %8s | %24s | %4s | %7s | %6s | %9s | %11s | %10s | %10s | %14s | %16 | \n", 
+				"RoomCode", "RoomName", "Beds", "bedType", "maxOcc", "basePrice", "decor", "popularity", "availCheckin", "lastStayDuration");
+				System.out.println("+----------+--------------------------+------+---------+--------+-----------+-------------+------------+------------+----------------+------------------+");
+				do {
+					System.out.printf("| %8s", result.getString(1));
+					System.out.printf(" | %24s", result.getInt(2));
+					System.out.printf(" | %4s", result.getString(3));
+					System.out.printf(" | %7s", result.getString(4));
+					System.out.printf(" | %6s", result.getString(5));
+					System.out.printf(" | %9s", result.getString(6));
+					System.out.printf(" | %11s", result.getString(7));
+					System.out.printf(" | %10s", result.getString(8));
+					System.out.printf(" | %10s", result.getInt(9));
+					System.out.printf(" | %14s |\n", result.getInt(10));
+					System.out.printf(" | %16s |\n", result.getInt(10));
+				} while (result.next());
+
+				System.out.println("+----------+--------------------------+------+---------+--------+-----------+-------------+------------+------------+----------------+------------------+");
+			}
+		}
+		catch(SQLException e){
+			e.printStackTrace();
+		}
+
 	}
 	
 	public static void reservations(Connection c, Scanner s) {

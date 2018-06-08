@@ -380,11 +380,9 @@ public class InnReservations {
 					resRoom = resultForDate.getString(2); //Room under reservation
 			    	resCheckIn = resultForDate.getDate(3); //curr checkIn for res
 					resCheckOut = resultForDate.getDate(4); //curr checkOut for res
-					System.out.println("Current check-in date: " + resCheckIn);
-					System.out.println("Current check-out date: " + resCheckOut);
 				}
 		    }
-		    catch(Exception e){
+		    catch(SQLException e){
 		    	e.printStackTrace();
 		    }
 
@@ -414,6 +412,8 @@ public class InnReservations {
 					break;
 				case 3:
 					while(true){
+						System.out.println("Current check-in date: " + resCheckIn);
+						System.out.println("Current check-out date: " + resCheckOut);
 						System.out.print("New begin date (yyyy-mm-dd):");
 						newString = s.nextLine();
 						try {
@@ -444,6 +444,8 @@ public class InnReservations {
 					break;
 				case 4:
 					while(true){
+						System.out.println("Current check-in date: " + resCheckIn);
+						System.out.println("Current check-out date: " + resCheckOut);
 						System.out.print("New end date (yyyy-mm-dd):");
 						newString = s.nextLine();
 						try {
@@ -516,7 +518,8 @@ public class InnReservations {
 			}
 
 			while(true){
-				System.out.print("Are you sure you want to make this change: '" + newString + "'?\n(Y)es/(N)o: ");
+				System.out.print("Are you sure you want to make this change: '" + newString + "'? " + 
+								 "(No will exit reservation change)\n(Y)es/(N)o: ");
 				String response = s.nextLine();
 				String lcResponse = response.toLowerCase(); //input is NOT case sensitive
 				if(lcResponse.equals("y") || lcResponse.equals("yes")){
@@ -525,7 +528,7 @@ public class InnReservations {
 				}
 				else if(lcResponse.equals("n") || lcResponse.equals("no")){
 					isDone = true; //end the main outer loop and return to initial prompt
-					System.out.println("Reservation change has been cancelled");
+					System.out.println("Reservation change has been cancelled.");
 					break;
 				}
 				else{
@@ -534,7 +537,7 @@ public class InnReservations {
 			}
 
 			if(isDone) //break out of main loop back to init prompt
-				break;
+				return;
 
 			while(true){
 				System.out.print("Would you like to make an additional change?\n(Y)es/(N)o: ");
@@ -558,11 +561,28 @@ public class InnReservations {
 			System.out.println(); //new line for readability
 		}
 
-
 		//update user reservation in database
 		try {
+
+			String firstNameQuery = "FirstName = ?";
+			String lastNameQuery = ",\n    lastName = ?";
+			String beginDateQuery = ",\n    CheckIn = ?";
+			String endDateQuery = ",\n    Checkout = ?";
+			String numChildQuery = ",\n    Kids = ?";
+			String numAdultQuery = ",\n    Adults = ?";
+
 			//sql for reservation update
-			String sql1 = "UPDATE kkurashi.lab7_reservations\n"; //+ 
+			String sql1 = "UPDATE kkurashi.lab7_reservations\n" +
+						  "SET " +
+						  ((!firstName.equals("<no change>"))? firstNameQuery : "FirstName=FirstName") + 
+						  ((!lastName.equals("<no change>"))? lastNameQuery : "") +
+						  ((newBeginDate != null)? beginDateQuery : "") +  
+						  ((newEndDate != null)? endDateQuery : "") + 
+						  ((numChildren != -1)? numChildQuery : "") +
+						  ((numAdults != -1)? numAdultQuery : "") +
+						  "\nWHERE CODE = ?;";
+
+			PreparedStatement stmt1 = c.prepareStatement(sql1);
 
 			//sql for updated record
 			String sql2 = "SELECT * from kkurashi.lab7_reservations\n" +
@@ -573,64 +593,24 @@ public class InnReservations {
 				return;
 			}
 
-			boolean firstPrinted = false;
+			int queryPointer = 1; //start at 1
+			//check if fields were left blank and if not, add to sql statement
+			if(!firstName.equals("<no change>"))
+				stmt1.setString(queryPointer++, firstName);
+			if(!lastName.equals("<no change>"))
+				stmt1.setString(queryPointer++, lastName);
+			if(!(newBeginDate == null))
+				stmt1.setDate(queryPointer++, newBeginDate);
+			if(!(newEndDate == null))
+				stmt1.setDate(queryPointer++, newEndDate);
+			if(!(numChildren == -1))
+				stmt1.setInt(queryPointer++, numChildren);
+			if(!(numAdults == -1))
+				stmt1.setInt(queryPointer++, numAdults);
 
-			//check if fields were left blank and make sql statement accordingly
-			if(!firstName.equals("<no change>")){
-				sql1 += "SET FirstName = '" + firstName + "'";
-				firstPrinted = true;
-			}
-
-			if(!lastName.equals("<no change>")){
-				if(firstPrinted)
-					sql1 += ",\n    LastName = '" + lastName + "'";
-				else{
-					sql1 += "SET LastName = '" + lastName + "'";
-					firstPrinted = true;
-				}
-			}
-
-			if(!(newBeginDate == null)){
-				if(firstPrinted)
-					sql1 += ",\n    CheckIn = '" + newBeginDate + "'";
-				else{
-					sql1 += "SET CheckIn = '" + newBeginDate + "'";
-					firstPrinted = true;
-				}
-			}
-
-			if(!(newEndDate == null)){
-				if(firstPrinted)
-					sql1 += ",\n    Checkout = '" + newEndDate + "'";
-				else{
-					sql1 += "SET Checkout = '" + newEndDate + "'";
-					firstPrinted = true;
-				}
-			}
-
-			if(!(numChildren == -1)){
-				if(firstPrinted)
-					sql1 += ",\n    Kids = " + numChildren;
-				else{
-					sql1 += "SET Kids = " + numChildren;
-					firstPrinted = true;
-				}
-			}
-
-			if(!(numAdults == -1)){
-				if(firstPrinted)
-					sql1 += ",\n    Adults = " + numAdults;
-				else{
-					sql1 += "SET Adults = " + numAdults;
-					firstPrinted = true;
-				}
-			}
-			
-
-			sql1 += "\nWHERE CODE = " + resCode + ";"; //add conditional for record update
+			stmt1.setInt(queryPointer++, resCode); //add conditional for record update
 
 			//update reservation
-			PreparedStatement stmt1 = c.prepareStatement(sql1);
 			int rowsUpdated = stmt1.executeUpdate();
 			
 			//get newly updated record in reservations for user to see
@@ -699,7 +679,8 @@ public class InnReservations {
 		}
 	}
 	
-	public static void detailed_reservation_information(Connection c, Scanner s) {
+		public static void detailed_reservation_information(Connection c, Scanner s) {
+		System.out.println("5");
 		boolean isDone = false;
 		boolean isInvalid = false;
 
@@ -803,36 +784,59 @@ public class InnReservations {
 					//---------------------------------------------------------
 					//query specified tables based on the different search fields
 					try {
+						String dateQuery = "AND ((CheckIn BETWEEN ? AND ?)\n" + //5, 6
+								     	   "    OR (Checkout BETWEEN ? AND ?));"; //7, 8
+
 						String sql = "select kkurashi.lab7_rooms.RoomName, kkurashi.lab7_reservations.*\n" +
 									 "from kkurashi.lab7_rooms JOIN kkurashi.lab7_reservations\n" + 
-									 "WHERE Room = RoomCode";
+									 "WHERE Room = RoomCode\n" +
+									 "AND FirstName LIKE ?\n" + //1
+									 "AND LastName LIKE ?\n" +  //2
+									 "AND RoomCode LIKE ?\n" + //3
+									 "AND CONVERT(CODE, CHAR(5)) LIKE ?\n" //4
+								 	 + ((!dateRange.equals("<Any>"))? dateQuery : "");
+
+						PreparedStatement stmt = c.prepareStatement(sql);
 
 						//check if fields were left blank and make sql statement accordingly
 						if(!firstName.equals("<Any>"))
-							sql += "\nAND FirstName LIKE '" + firstName + "%'";
+							stmt.setString(1, firstName + "%");
+						else
+							stmt.setString(1, "%");
+
+						// sql += "\nAND FirstName LIKE '" + firstName + "%'";
 
 						if(!lastName.equals("<Any>"))
-							sql += "\nAND LastName LIKE '" + lastName + "%'";
+							stmt.setString(2, lastName + "%");
+						else
+							stmt.setString(2, "%");
+							// sql += "\nAND LastName LIKE '" + lastName + "%'";
+
+						if(!roomCode.equals("<Any>"))
+							stmt.setString(3, roomCode + "%");
+						else
+							stmt.setString(3, "%");
+						// sql += "\nAND RoomCode LIKE '" + roomCode + "%'";
+
+						if(!(resCode == -1))
+							stmt.setString(4, resCode + "%");
+						else
+							stmt.setString(4, "%");
+						// sql += "\nAND CONVERT(CODE, CHAR(5)) LIKE '" + resCode + "%'";
 
 						if(!dateRange.equals("<Any>")){
 							String startDate = splitDates[0];
 							String endDate = splitDates[1];
 
-							// sql += ",\nAND ('" + startDate + "' >= CheckIn AND '" + startDate + "' <= Checkout)" + 
-							// 	   				"\nOR ('" + endDate + "' >= CheckIn AND '" + endDate + "' <= Checkout)";
-							sql += "\nAND ((CheckIn BETWEEN '" + startDate + "' AND '" + endDate + "')" +
-								   	"\n    OR (Checkout BETWEEN '" + startDate + "' AND '" + endDate + "'))";
+							stmt.setString(5, startDate);
+							stmt.setString(6, endDate);
+							stmt.setString(7, startDate);
+							stmt.setString(8, endDate);
+							// sql += "\nAND ((CheckIn BETWEEN '" + startDate + "' AND '" + endDate + "')" +
+							// 	   	"\n    OR (Checkout BETWEEN '" + startDate + "' AND '" + endDate + "'))";
 						}
 
-						if(!roomCode.equals("<Any>"))
-							sql += "\nAND RoomCode LIKE '" + roomCode + "%'";
-
-						if(!(resCode == -1))
-							sql += "\nAND CONVERT(CODE, CHAR(5)) LIKE '" + resCode + "%'";
-						
-						System.out.println(sql);
-
-						PreparedStatement stmt = c.prepareStatement(sql);
+						// PreparedStatement stmt = c.prepareStatement(sql);
 						ResultSet result = stmt.executeQuery();
 						
 						if (result.next()) {
@@ -904,6 +908,7 @@ public class InnReservations {
 
 		}
 	}
+	
 	
 	public static void revenue(Connection c, Scanner s) {
 		String string;

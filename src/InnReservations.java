@@ -4,6 +4,9 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.time.*;
+import java.util.ArrayList;
 import java.util.Scanner;
 import java.lang.String;
 
@@ -85,11 +88,13 @@ public class InnReservations {
 		String lastname = string;
 		
 		System.out.print("Room code:");
-		string = s.nextLine();
+		string = s.nextLine().toLowerCase();
+		if (string.equals("any")) string = "%";
 		String roomcode = string;
 		
 		System.out.print("Bed type:");
-		string = s.nextLine();
+		string = s.nextLine().toLowerCase();
+		if (string.equals("any")) string = "%";
 		String bedtype = string;
 
 		Date checkin;
@@ -108,7 +113,7 @@ public class InnReservations {
 			string = s.nextLine();
 			try {
 				checkout = Date.valueOf(string);
-				break;
+				if (checkout.after(checkin)) break;
 			} catch (Exception e) {}
 		}
 		
@@ -132,7 +137,104 @@ public class InnReservations {
 			} catch (Exception e) {}
 		}
 		
-		String sql = "";
+		try {
+			Statement idstmt = c.createStatement();
+			ResultSet result = idstmt.executeQuery("select max(code) + 1\n" + 
+					"from kkurashi.lab7_reservations");
+			result.next();
+			int code = result.getInt(1);
+			
+			String sql = "select *\n" + 
+					"from kkurashi.lab7_rooms\n" + 
+					"where roomcode like ?\n" + 
+					"    and bedtype like ?\n" + 
+					"    and maxocc >= ?\n" + 
+					"    and roomcode not in (\n" + 
+					"        select distinct room\n" + 
+					"        from kkurashi.lab7_reservations\n" + 
+					"        where checkin between ? and date_sub(?, interval 1 day)\n" + 
+					"        or date_sub(checkout, interval 1 day) between ? and ?\n" + 
+					"    )";
+			PreparedStatement stmt = c.prepareStatement(sql);
+			stmt.setString(1, roomcode);
+			stmt.setString(2, bedtype);
+			stmt.setInt(3, adults + children);
+			stmt.setDate(4, checkin);
+			stmt.setDate(5, checkout);
+			stmt.setDate(6, checkin);
+			stmt.setDate(7, checkout);
+			
+			result = stmt.executeQuery();
+			int i = 1;
+			ArrayList<String> list = new ArrayList<String>();
+			ArrayList<Double> pricelist = new ArrayList<Double>();
+			if (result.next()) {
+				do {
+					string = result.getString(1);
+					System.out.printf("%2d: %s\n", i, string);
+					string += " " + result.getString(2) + " " + result.getString(3);
+					list.add(string);
+					pricelist.add(result.getDouble(6));
+					i++;
+				} while (result.next());
+			} else {
+				sql = "";
+			}
+			
+			int room;
+			while (true) {
+				System.out.print("Choice:");
+				string = s.nextLine();
+				try {
+					room = Integer.parseInt(string);
+					if (room < i && room > 0) break;
+				} catch (Exception e) {}
+			}
+			
+			double price = 0.0;
+			LocalDate checkinDate = checkin.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+			LocalDate checkoutDate = checkout.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+			while (checkinDate.isBefore(checkoutDate)) {
+				if (checkinDate.getDayOfWeek().equals(DayOfWeek.SUNDAY) || checkinDate.getDayOfWeek().equals(DayOfWeek.SATURDAY)) {
+					price += pricelist.get(room - 1) * 1.1;
+				} else {
+					price += pricelist.get(room - 1);
+				}
+				checkinDate = checkinDate.plusDays(1);
+			}
+			price *= 1.18;
+			
+			System.out.println(firstname + " " + lastname);
+			System.out.println(list.get(room - 1));
+			System.out.println(checkin.toString() + " to " + checkout.toString());
+			System.out.println("Adults:" + adults);
+			System.out.println("Children:" + children);
+			System.out.printf("Cost:$%.2f", price);
+			
+			sql = "insert into `kkurashi`.`lab7_reservations`\n" + 
+					"    (`CODE`, `Room`, `CheckIn`, `Checkout`, `Rate`, `LastName`, `FirstName`, `Adults`, `Kids`)\n" + 
+					"    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+			stmt = c.prepareStatement(sql);
+			stmt.setInt(1, code);
+			stmt.setString(2, list.get(room - 1).substring(0, 3));
+			stmt.setDate(3, checkin);
+			stmt.setDate(4, checkout);
+			stmt.setDouble(5, price);
+			stmt.setString(6, lastname);
+			stmt.setString(7, firstname);
+			stmt.setInt(8, adults);
+			stmt.setInt(9, children);
+			int update = stmt.executeUpdate();
+			if (update > 0) {
+				System.out.println("Success!");
+			} else {
+				System.out.println("Unable to add Reservation.");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		
 	}
 	
 	public static void reservation_change(Connection c, Scanner s) {

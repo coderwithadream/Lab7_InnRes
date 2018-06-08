@@ -238,7 +238,364 @@ public class InnReservations {
 	}
 	
 	public static void reservation_change(Connection c, Scanner s) {
-		System.out.println("3");
+		System.out.print("To begin, please enter your reservation code: ");
+		int resCode;
+
+		while(true){
+
+			//obtain resCode for query use
+			String resCodeStr = s.nextLine();
+			try {
+				resCode = Integer.parseInt(resCodeStr);
+			} catch (Exception e) {
+				System.out.println("Error: Please provide a valid reservation number.");
+				System.out.print("Please enter your reservation code: ");
+				continue;
+			}
+			//check if resCode contains 5 digits
+			if(resCode < 10000 || resCode > 99999){ //resCode is less than 5 digits OR resCode exceeds 5 digits
+				System.out.println("Error: Reservation code must be 5 digits. Please try again.");
+				System.out.print("Please enter your reservation code: ");
+			}
+			else{ //valid resCode given so continue to next prompt
+				break;
+			}
+		}
+
+		boolean isDone = false;
+		boolean isInvalid = false;
+
+		String firstName = "<no change>";
+		String lastName = "<no change>";
+		Date newBeginDate = null;
+		Date newEndDate = null;
+		int numChildren = -1;
+		int numAdults = -1;
+
+		//for seeing if fields are left blank
+		boolean haveFirst = false;
+		boolean haveLast = false;
+		boolean haveBeginDate = false;
+		boolean haveEndDate = false; 
+		boolean haveChildren = false;
+		boolean haveAdults = false;
+
+		boolean noChange = true;
+
+		while(!isDone){
+			System.out.println("What would you like to change?");
+			System.out.println("1. First name -> " + firstName);
+			System.out.println("2. Last name  -> " + lastName);
+			System.out.println("3. Begin date -> " + (newBeginDate == null? "<no change>" : newBeginDate));
+			System.out.println("4. End date   -> " + (newEndDate == null? "<no change>" : newEndDate));
+			System.out.println("5. # children -> " + (numChildren == -1? "<no change>" : numChildren));
+			System.out.println("6. # adults   -> " + (numAdults == -1? "<no change>" : numAdults));
+			System.out.println("7. EXIT RESERVATION CHANGE");
+
+			System.out.print("Choose number: ");
+			String numChosenStr = s.nextLine();
+			int numChosen;
+			try {
+				numChosen = Integer.parseInt(numChosenStr);
+			} catch (Exception e) {
+				System.out.println("Error: Please provide a valid number from the list.\n");
+				continue;
+			}
+			System.out.println(); //add a new line for readability
+
+			//for user to change begin and end date
+			Date resCheckIn = null;
+			Date resCheckOut = null;
+			String resRoom = "";
+		    String dateSQL = "SELECT * from kkurashi.lab7_reservations WHERE CODE = ?;";
+		    try (PreparedStatement pstmtDate = c.prepareStatement(dateSQL)) {
+		    	pstmtDate.setInt(1, resCode);
+
+				ResultSet resultForDate = pstmtDate.executeQuery(); // Send SQL statement to DBMS
+				if(resultForDate.next()){
+					resRoom = resultForDate.getString(2); //Room under reservation
+			    	resCheckIn = resultForDate.getDate(3); //curr checkIn for res
+					resCheckOut = resultForDate.getDate(4); //curr checkOut for res
+					System.out.println("Current check-in date: " + resCheckIn);
+					System.out.println("Current check-out date: " + resCheckOut);
+				}
+		    }
+		    catch(Exception e){
+		    	e.printStackTrace();
+		    }
+
+			//for querying currently reserved dates 
+			// FOR TESTING: use res CODE 49886
+			// -2019-01-12 and any later date will allow user to change checkIn,
+			// -and almost any date before will result in date conflicts for user
+			String newSQl = "SELECT * from kkurashi.lab7_reservations\n" +
+							"WHERE ? >= CheckIn AND ? < Checkout\n" +
+							"AND CODE != ?\n" + //exclude users own reservation from search
+							"AND Room = '" + resRoom + "';"; //only select room that person wants to change check-in/check-out for
+
+			PreparedStatement pstmt;
+			ResultSet result;
+
+			String newString = "";
+			switch(numChosen){
+				case 1:
+					System.out.print("New first name:");
+					newString = s.nextLine();
+					firstName = newString;
+					break;
+				case 2:
+					System.out.print("New last name:");
+					newString = s.nextLine();
+					lastName = newString;
+					break;
+				case 3:
+					while(true){
+						System.out.print("New begin date (yyyy-mm-dd):");
+						newString = s.nextLine();
+						try {
+							newBeginDate = Date.valueOf(newString);
+							if(newBeginDate.after(resCheckOut)){ //check if newEndDate comes before current CheckIn
+								System.out.println("Error: Your check-in date can not be after your check-out date. Change check-out date first.\n");
+								newBeginDate = null;
+								isInvalid = true;
+								break;
+							}
+							pstmt = c.prepareStatement(newSQl);
+							pstmt.setDate(1, newBeginDate);
+							pstmt.setDate(2, newBeginDate);
+							pstmt.setInt(3, resCode);
+							result = pstmt.executeQuery();
+							if(result.next()){ //if queries with matching dates were found
+								System.out.println("Date conflicts with current reservation in our system. Please try again.");
+								newBeginDate = null;
+								isInvalid = true;
+							}
+							else{//there are no current res with date, so allow user to use date
+								break;
+							}
+						} catch (Exception e) {
+							System.out.println("Please provide a valid date in the proper format.");
+						}
+					}
+					break;
+				case 4:
+					while(true){
+						System.out.print("New end date (yyyy-mm-dd):");
+						newString = s.nextLine();
+						try {
+							newEndDate = Date.valueOf(newString);
+							if(!newEndDate.after(resCheckIn)){ //check if newEndDate comes before current CheckIn
+								System.out.println("Error: Your check-out date can not be before your check-in date. Change check-in date first.");
+								newEndDate = null;
+								isInvalid = true;
+								break;
+							}
+
+							pstmt = c.prepareStatement(newSQl);
+							pstmt.setDate(1, newEndDate);
+							pstmt.setDate(2, newEndDate);
+							pstmt.setInt(3, resCode);
+							result = pstmt.executeQuery();
+							if(result.next()){ //if queries with matching dates were found
+								newEndDate = null;
+								System.out.println("Date conflicts with current reservation in our system. Please try again.");
+								isInvalid = true;
+							}
+							else{//there are no current res with date, so allow user to use date
+								System.out.println();
+								break;
+							}
+						} catch (Exception e) {
+							System.out.println("Please provide a valid date in the proper format.");
+						}
+					}
+					break;
+				case 5:
+					while(true){
+						System.out.print("New # of children:");
+						newString = s.nextLine();
+						try {
+							numChildren = Integer.parseInt(newString);
+							break;
+						} catch (Exception e) {
+							System.out.println("Please provide a valid number.");
+						}
+					}
+					break;
+				case 6:
+					while(true){
+						System.out.print("New # of adults:");
+						newString = s.nextLine();
+						try {
+							numAdults = Integer.parseInt(newString);
+							break;
+						} catch (Exception e) {
+							System.out.println("Please provide a valid number.");
+						}
+					}
+					break;
+				case 7:
+					isDone = true; //doesn't do anything but for readability
+					break; //break out of main loop and return to initial prompt
+				default:
+					System.out.print("Error: Invalid number. Please try again.");
+					isInvalid = true;
+					break; //prompt user for res change
+			}
+
+			if(isDone){ //break out of main loop back to init prompt
+				break;
+			}
+			else if(isInvalid){
+				isInvalid = false;
+				continue;
+			}
+
+			while(true){
+				System.out.print("Are you sure you want to make this change: '" + newString + "'?\n(Y)es/(N)o: ");
+				String response = s.nextLine();
+				String lcResponse = response.toLowerCase(); //input is NOT case sensitive
+				if(lcResponse.equals("y") || lcResponse.equals("yes")){
+					noChange = false;
+					break;
+				}
+				else if(lcResponse.equals("n") || lcResponse.equals("no")){
+					isDone = true; //end the main outer loop and return to initial prompt
+					System.out.println("Reservation change has been cancelled");
+					break;
+				}
+				else{
+					System.out.println("Error: Invalid input. Please try again.");
+				}
+			}
+
+			if(isDone) //break out of main loop back to init prompt
+				break;
+
+			while(true){
+				System.out.print("Would you like to make an additional change?\n(Y)es/(N)o: ");
+				String answer = s.nextLine();
+				String lcAnswer = answer.toLowerCase(); //input is NOT case sensitive
+				if(lcAnswer.equals("y") || lcAnswer.equals("yes")){
+					System.out.println("");
+					isDone = false; //continue the main outer loop
+					break;
+				}
+				else if(lcAnswer.equals("n") || lcAnswer.equals("no")){
+					System.out.println("\nReservation has been updated. Thank you :)");
+					isDone = true; //end the main outer loop and return to initial prompt
+					break;
+				}
+				else{
+					System.out.println("Error: Invalid input. Please try again.");
+				}
+			}
+
+			System.out.println(); //new line for readability
+		}
+
+
+		//update user reservation in database
+		try {
+			//sql for reservation update
+			String sql1 = "UPDATE kkurashi.lab7_reservations\n"; //+ 
+
+			//sql for updated record
+			String sql2 = "SELECT * from kkurashi.lab7_reservations\n" +
+						  "WHERE CODE = ?;";		 
+
+			//if user for some reason was able to make it here without making a change, leave res change
+			if(noChange){
+				return;
+			}
+
+			boolean firstPrinted = false;
+
+			//check if fields were left blank and make sql statement accordingly
+			if(!firstName.equals("<no change>")){
+				sql1 += "SET FirstName = '" + firstName + "'";
+				firstPrinted = true;
+			}
+
+			if(!lastName.equals("<no change>")){
+				if(firstPrinted)
+					sql1 += ",\n    LastName = '" + lastName + "'";
+				else{
+					sql1 += "SET LastName = '" + lastName + "'";
+					firstPrinted = true;
+				}
+			}
+
+			if(!(newBeginDate == null)){
+				if(firstPrinted)
+					sql1 += ",\n    CheckIn = '" + newBeginDate + "'";
+				else{
+					sql1 += "SET CheckIn = '" + newBeginDate + "'";
+					firstPrinted = true;
+				}
+			}
+
+			if(!(newEndDate == null)){
+				if(firstPrinted)
+					sql1 += ",\n    Checkout = '" + newEndDate + "'";
+				else{
+					sql1 += "SET Checkout = '" + newEndDate + "'";
+					firstPrinted = true;
+				}
+			}
+
+			if(!(numChildren == -1)){
+				if(firstPrinted)
+					sql1 += ",\n    Kids = " + numChildren;
+				else{
+					sql1 += "SET Kids = " + numChildren;
+					firstPrinted = true;
+				}
+			}
+
+			if(!(numAdults == -1)){
+				if(firstPrinted)
+					sql1 += ",\n    Adults = " + numAdults;
+				else{
+					sql1 += "SET Adults = " + numAdults;
+					firstPrinted = true;
+				}
+			}
+			
+
+			sql1 += "\nWHERE CODE = " + resCode + ";"; //add conditional for record update
+
+			//update reservation
+			PreparedStatement stmt1 = c.prepareStatement(sql1);
+			int rowsUpdated = stmt1.executeUpdate();
+			
+			//get newly updated record in reservations for user to see
+			PreparedStatement pstmt2 = c.prepareStatement(sql2);
+			pstmt2.setInt(1, resCode);
+			ResultSet result2 = pstmt2.executeQuery();
+
+			System.out.println("UPDATED RESERVATION:");
+			System.out.println("+-------+------+------------+------------+---------+---------------+------------+--------+------+");
+			System.out.printf("| %5s | %4s | %10s | %10s | %7s | %13s | %10s | %6s | %4s |\n", 
+			"CODE", "Room", "CheckIn", "Checkout", "Rate", "LastName", "FirstName", "Adults", "Kids");
+			System.out.println("+-------+------+------------+------------+---------+---------------+------------+--------+------+");
+			if(result2.next()){
+				System.out.printf("| %5d", result2.getInt(1));
+				System.out.printf(" | %4s", result2.getString(2));
+				System.out.printf(" | %10s", result2.getString(3));
+				System.out.printf(" | %10s", result2.getString(4));
+				System.out.printf(" | %7s", result2.getString(5));
+				System.out.printf(" | %13s", result2.getString(6));
+				System.out.printf(" | %10s", result2.getString(7));
+				System.out.printf(" | %6d", result2.getInt(8));
+				System.out.printf(" | %4d |\n", result2.getInt(9));
+			}
+			System.out.println("+-------+------+------------+------------+---------+---------------+------------+--------+------+");
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
 	}
 	
 	public static void reservation_cancellation(Connection c, Scanner s) {
@@ -279,7 +636,209 @@ public class InnReservations {
 	}
 	
 	public static void detailed_reservation_information(Connection c, Scanner s) {
-		System.out.println("5");
+		boolean isDone = false;
+		boolean isInvalid = false;
+
+		String firstName = "<Any>";
+		String lastName = "<Any>";
+		String dateRange = "<Any>";
+		String roomCode = "<Any>";
+		int resCode = -1;
+
+		//for both dates in date range
+		String[] splitDates = new String[2];
+
+		while(!isDone){
+			System.out.println("What would you like to search for?");
+			System.out.println("1. First name: " + firstName);
+			System.out.println("2. Last name: " + lastName);
+			System.out.println("3. Range of dates: " + dateRange);
+			System.out.println("4. Room code (i.e. AOB): " + roomCode);
+			System.out.println("5. Reservation code: " + (resCode == -1? "<Any>" : resCode));
+			System.out.println("6. Clear search fields");
+			System.out.println("7. Search reservations with given fields");
+			System.out.println("8. EXIT RESERVATION SEARCH");
+
+
+			System.out.print("Choose number: ");
+			String numChosenStr = s.nextLine();
+			int numChosen;
+			try {
+				numChosen = Integer.parseInt(numChosenStr);
+			} catch (Exception e) {
+				System.out.println("Error: Please provide a valid number from the list.\n");
+				continue;
+			}
+			System.out.println(); //add a new line for readability
+			
+			String newString = "";
+			switch(numChosen){
+				case 1:
+					System.out.print("First name:");
+					firstName = s.nextLine();
+					break;
+				case 2:
+					System.out.print("New last name:");
+					lastName = s.nextLine();
+					break;
+				case 3:
+					System.out.print("Search Date Range (yyyy-mm-dd:yyyy-mm-dd):");
+					dateRange = s.nextLine();
+					if(dateRange.contains(":")){
+						splitDates = dateRange.split(":");
+						try{
+							Date testDate1 = Date.valueOf(splitDates[0]);
+							Date testDate2 = Date.valueOf(splitDates[1]);
+						}catch(Exception e){
+							dateRange = "<Any>";
+							System.out.println("Error: Please provide a valid range of dates\n");
+							break;
+						}
+						System.out.println("beginDate: " + splitDates[0]);
+						System.out.println("endDate: " + splitDates[1]);
+					}
+					else{
+						dateRange = "<Any>";
+						System.out.println("Error: Please provide a valid range of dates.\n");
+					}
+					break;
+				case 4:
+					// while(true){
+					// 	System.out.print("Search room code:");
+					// 	roomCode = s.nextLine();
+					// 	if(roomCode.length() == 3){
+					// 		break;
+					// 	}
+					// 	else{
+					// 		System.out.println("Please provide a valid room code (i.e. AOB)");
+					// 	}
+					// }
+					System.out.print("Search room code:");
+					roomCode = s.nextLine();
+					break;
+				case 5:
+					while(true){
+						System.out.print("Search reservation code:");
+						newString = s.nextLine();
+						try {
+							resCode = Integer.parseInt(newString);
+							break;
+						} catch (Exception e) {
+							System.out.println("Please provide a valid 5-digit reservation number.");
+						}
+					}
+					break;
+				case 6:
+					firstName = "<Any>";
+					lastName = "<Any>";
+					dateRange = "<Any>";
+					roomCode = "<Any>";
+					resCode = -1;
+					break;
+				case 7:
+					//---------------------------------------------------------
+					//query specified tables based on the different search fields
+					try {
+						String sql = "select kkurashi.lab7_rooms.RoomName, kkurashi.lab7_reservations.*\n" +
+									 "from kkurashi.lab7_rooms JOIN kkurashi.lab7_reservations\n" + 
+									 "WHERE Room = RoomCode";
+
+						//check if fields were left blank and make sql statement accordingly
+						if(!firstName.equals("<Any>"))
+							sql += "\nAND FirstName LIKE '" + firstName + "%'";
+
+						if(!lastName.equals("<Any>"))
+							sql += "\nAND LastName LIKE '" + lastName + "%'";
+
+						if(!dateRange.equals("<Any>")){
+							String startDate = splitDates[0];
+							String endDate = splitDates[1];
+
+							// sql += ",\nAND ('" + startDate + "' >= CheckIn AND '" + startDate + "' <= Checkout)" + 
+							// 	   				"\nOR ('" + endDate + "' >= CheckIn AND '" + endDate + "' <= Checkout)";
+							sql += "\nAND ((CheckIn BETWEEN '" + startDate + "' AND '" + endDate + "')" +
+								   	"\n    OR (Checkout BETWEEN '" + startDate + "' AND '" + endDate + "'))";
+						}
+
+						if(!roomCode.equals("<Any>"))
+							sql += "\nAND RoomCode LIKE '" + roomCode + "%'";
+
+						if(!(resCode == -1))
+							sql += "\nAND CONVERT(CODE, CHAR(5)) LIKE '" + resCode + "%'";
+						
+						System.out.println(sql);
+
+						PreparedStatement stmt = c.prepareStatement(sql);
+						ResultSet result = stmt.executeQuery();
+						
+						if (result.next()) {
+							System.out.println("+--------------------------+-------+------+------------+------------+---------+---------------+------------+--------+------+");
+							System.out.printf("| %24s | %5s | %4s | %10s | %10s | %7s | %13s | %10s | %6s | %4s |\n", 
+							"RoomName", "CODE", "Room", "CheckIn", "Checkout", "Rate", "LastName", "FirstName", "Adults", "Kids");
+							System.out.println("+--------------------------+-------+------+------------+------------+---------+---------------+------------+--------+------+");
+							do {
+								System.out.printf("| %24s", result.getString(1));
+								System.out.printf(" | %5d", result.getInt(2));
+								System.out.printf(" | %4s", result.getString(3));
+								System.out.printf(" | %10s", result.getString(4));
+								System.out.printf(" | %10s", result.getString(5));
+								System.out.printf(" | %7s", result.getString(6));
+								System.out.printf(" | %13s", result.getString(7));
+								System.out.printf(" | %10s", result.getString(8));
+								System.out.printf(" | %6d", result.getInt(9));
+								System.out.printf(" | %4d |\n", result.getInt(10));
+							} while (result.next());
+
+							System.out.println("+--------------------------+-------+------+------------+------------+---------+---------------+------------+--------+------+");
+						}
+						else{
+							System.out.println("No results found.");
+						}
+
+					} catch (SQLException e) {
+						e.printStackTrace();
+					}
+					System.out.println("Search complete.\n");
+					//---------------------------------------------------------
+
+					//check to see if user wants to perform another search
+					while(true){
+						System.out.print("Would you like to perform another search?\n(Y)es/(N)o?");
+						String answer = s.nextLine();
+						String lcAnswer = answer.toLowerCase(); //input is NOT case sensitive
+						if(lcAnswer.equals("y") || lcAnswer.equals("yes")){
+							isDone = false; //continue the main outer loop
+							break;
+						}
+						else if(lcAnswer.equals("n") || lcAnswer.equals("no")){
+							System.out.println("Reservation has been updated. Thank you :)");
+							isDone = true; //end the main outer loop and return to initial prompt
+							break;
+						}
+						else{
+							System.out.println("Error: Invalid input. Please try again.");
+						}
+					}
+
+					break;
+				case 8:
+					isDone = true; //doesn't do anything but for readability
+					break; //break out of main loop and return to initial prompt
+				default:
+					System.out.println("Error: Invalid number. Please try again.");
+					isInvalid = true;
+					break; //prompt user for res change
+			}
+
+			if(isDone){ //break out of main loop back to init prompt
+				break;
+			}
+			else if(isInvalid){
+				isInvalid = false;
+				continue;
+			}
+
+		}
 	}
 	
 	public static void revenue(Connection c, Scanner s) {

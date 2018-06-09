@@ -69,42 +69,99 @@ public class InnReservations {
 		return true;
 	}
 	
-	//1, 3, 5 - RW
-	//2, 4, 6 - KK
+	//3, 5 - RW
+	//1, 2, 4, 6 - KK
 	public static void rooms_and_rates(Connection c, Scanner s) {
-		
-		try{
-			String sql = "select kkurashi.lab7_rooms.*, _ as popularity, _ as availCheckin, _ as lastStayDuration\n" +
-						 "from kkurashi.lab7_rooms JOIN kkurashi.lab7_reservations\n" + 
-						 "WHERE Room = RoomCode";
-			System.out.println(sql);
-
+		System.out.println("");
+		try {
+			String sql = "select r.roomcode, r.roomname, r.beds, r.bedtype, r.maxocc, r.baseprice, r.decor, a.score, b.available, c.days, c.checkout\n" + 
+					"from kkurashi.lab7_rooms r\n" + 
+					"	join (\n" + 
+					"		select room, round(sum(days)/180, 2) score\n" + 
+					"		from (\n" + 
+					"				select room, datediff(if(datediff(curdate(), checkout) < 0, curdate(), checkout), if(datediff(checkin, date_sub(curdate(), interval 180 day)) < 0, date_sub(curdate(), interval 180 day), checkin)) days\n" + 
+					"				from kkurashi.lab7_reservations\n" + 
+					"				where datediff(checkout, date_sub(curdate(), interval 180 day)) > 0 and datediff(curdate(), checkin) > 0\n" + 
+					"			) a\n" + 
+					"		group by room\n" + 
+					"	) a\n" + 
+					"	join (\n" + 
+					"		select a.roomcode,\n" + 
+					"			if(a.roomcode not in (\n" + 
+					"				select room\n" + 
+					"				from kkurashi.lab7_reservations\n" + 
+					"				where curdate() between checkin and date_sub(checkout, interval 1 day)), curdate(), checkout) available\n" + 
+					"		from (\n" + 
+					"				select roomcode, checkout, datediff(occupied.checkout, curdate()) days\n" + 
+					"				from kkurashi.lab7_rooms rooms\n" + 
+					"					join (\n" + 
+					"						select a.room, a.checkin, a.checkout\n" + 
+					"						from kkurashi.lab7_reservations a\n" + 
+					"							left join kkurashi.lab7_reservations b\n" + 
+					"						on a.checkout = b.checkin\n" + 
+					"						where b.checkout is null) occupied\n" + 
+					"				on rooms.roomcode = occupied.room) a\n" + 
+					"			join (\n" + 
+					"				select roomcode, min(days) day\n" + 
+					"				from (\n" + 
+					"					select roomcode, checkout, datediff(occupied.checkout, curdate()) days\n" + 
+					"					from kkurashi.lab7_rooms rooms\n" + 
+					"						join (\n" + 
+					"							select a.room, a.checkin, a.checkout\n" + 
+					"							from kkurashi.lab7_reservations a\n" + 
+					"								left join kkurashi.lab7_reservations b\n" + 
+					"							on a.checkout = b.checkin\n" + 
+					"							where b.checkout is null) occupied\n" + 
+					"					on rooms.roomcode = occupied.room\n" + 
+					"					where datediff(occupied.checkout, curdate()) >= 0\n" + 
+					"				) d\n" + 
+					"				group by roomcode\n" + 
+					"			) b\n" + 
+					"		on a.roomcode = b.roomcode and a.days = b.day\n" + 
+					"	) b\n" + 
+					"	join (\n" + 
+					"		select a.room, datediff(checkout, checkin) days, checkout\n" + 
+					"		from (\n" + 
+					"				select room, max(days) d\n" + 
+					"				from (\n" + 
+					"						select room, datediff(checkout, curdate()) days\n" + 
+					"						from kkurashi.lab7_reservations\n" + 
+					"						where datediff(checkout, curdate()) < 0\n" + 
+					"					) a\n" + 
+					"				group by room\n" + 
+					"			) a\n" + 
+					"			join (\n" + 
+					"				select room, checkin, checkout, datediff(checkout, curdate()) days\n" + 
+					"				from kkurashi.lab7_reservations\n" + 
+					"				where datediff(checkout, curdate()) < 0\n" + 
+					"			) b\n" + 
+					"		on a.room = b.room and a.d = b.days\n" + 
+					"	) c\n" + 
+					"on r.roomcode = a.room and r.roomcode = b.roomcode and r.roomcode = c.room";
 			PreparedStatement stmt = c.prepareStatement(sql);
 			ResultSet result = stmt.executeQuery();
 			
 			if (result.next()) {
-				System.out.println("+----------+--------------------------+------+---------+--------+-----------+-------------+------------+------------+----------------+------------------+");
-				System.out.printf("| %8s | %24s | %4s | %7s | %6s | %9s | %11s | %10s | %10s | %14s | %16 | \n", 
-				"RoomCode", "RoomName", "Beds", "bedType", "maxOcc", "basePrice", "decor", "popularity", "availCheckin", "lastStayDuration");
-				System.out.println("+----------+--------------------------+------+---------+--------+-----------+-------------+------------+------------+----------------+------------------+");
+				System.out.printf("%9s | %25s | %4s | %8s | %8s | %10s | %11s | %10s | %14s | %9s | %13s\n",
+						"Room Code", "Room Name", "Beds", "Bed Type", "Capacity", "Base Price", "Decor", "Popularity", "Next Available", "Last Stay", "Last Checkout");
 				do {
-					System.out.printf("| %8s", result.getString(1));
-					System.out.printf(" | %24s", result.getInt(2));
-					System.out.printf(" | %4s", result.getString(3));
-					System.out.printf(" | %7s", result.getString(4));
-					System.out.printf(" | %6s", result.getString(5));
-					System.out.printf(" | %9s", result.getString(6));
+					System.out.printf("%9s", result.getString(1));
+					System.out.printf(" | %25s", result.getString(2));
+					System.out.printf(" | %4d", result.getInt(3));
+					System.out.printf(" | %8s", result.getString(4));
+					System.out.printf(" | %8s", result.getInt(5));
+					System.out.printf(" | %10.2f", result.getDouble(6));
 					System.out.printf(" | %11s", result.getString(7));
-					System.out.printf(" | %10s", result.getString(8));
-					System.out.printf(" | %10s", result.getInt(9));
-					System.out.printf(" | %14s |\n", result.getInt(10));
-					System.out.printf(" | %16s |\n", result.getInt(10));
+					System.out.printf(" | %10.2f", result.getDouble(8));
+					System.out.printf(" | %14s", result.getDate(9).toString());
+					System.out.printf(" | %9d", result.getInt(10));
+					System.out.printf(" | %13s", result.getDate(11).toString());
+					System.out.println();
 				} while (result.next());
-
-				System.out.println("+----------+--------------------------+------+---------+--------+-----------+-------------+------------+------------+----------------+------------------+");
+			} else {
+				System.out.println("There are no rooms!");
 			}
-		}
-		catch(SQLException e){
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 

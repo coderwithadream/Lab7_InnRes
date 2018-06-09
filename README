@@ -1,0 +1,18 @@
+CSC365 Inn Reservation System using JDBC Lab7
+Authors: Kyle Kurashima, Ryan Wong
+
+Compilation/Runtime Instructions:
+    Environment Variables:
+        export CLASSPATH=$CLASSPATH:mysql-connector-java-8.0.11.jar:.
+        export HP_JDBC_URL=jdbc:mysql://csc365spring2018.webredirect.org/kkurashi?autoReconnect=true&verifyServerCertificate=false&useSSL=false
+        export HP_JDBC_USER=kkurashi
+        export HP_JDBC_PW=365Spring18_010332279
+    
+    To Compile Program: javac InnReservations.java
+    To Run Program: java InnReservations
+    
+    Name of Database used for Program: kkurashi
+    Name of Tables used: kkurashi.lab7_rooms, kkurashi.lab7_rooms
+    
+Known Bugs/Deficiencies:
+Everything should follow the specifications
